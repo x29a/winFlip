@@ -1,0 +1,108 @@
+<head>
+</head>
+<body>
+
+
+
+<script>
+// global var with windows in it
+var windowList = new Array();
+var currentWindow = -1;
+var windowTries = 0;
+
+// get initial values
+updateInformation();
+
+// attach listener to browserAction
+chrome.browserAction.onClicked.addListener(flipWin);
+
+// simpler solution, just hide this window
+function flipWin2() {
+    updateCurrentWindow();
+    // should bring up the next in z-order, hides the current though :(
+    chrome.windows.update(currentWindow,{"focused":false});
+    
+}
+
+function flipWin() {
+    console.log('flipping');
+  
+    updateCurrentWindow();
+    console.log('cur: '+currentWindow);
+    
+    updateWindowList();
+    
+    // we already got the current id
+    if(currentWindow > 0) {
+        for (var i=0; i<windowList.length; i++) {
+            console.log('i: '+i+" - id: "+windowList[i]);
+        
+            // found the current window
+            if (windowList[i] == currentWindow) {
+                // check if there is a "next" id
+                if(typeof windowList[i+1] != "undefined") {
+                    console.log('next focus item: '+(i+1)+" - id: "+windowList[i+1]);
+                    // and set it as focused
+                    chrome.windows.update(windowList[i+1], {"focused": true});
+                }
+                // might be the last window, so start with first
+                else if(typeof windowList[0] != "undefined") {
+                    console.log('new focus item: 0 - id: '+windowList[0]);
+                    // and set it as focused
+                    chrome.windows.update(windowList[0], {"focused": true});
+                }
+                else {
+                    console.log('not touching the focus');
+                }
+                
+                updateCurrentWindow();
+                
+            }
+            
+            
+        }
+    }
+    else {
+        console.log("bleh");
+    }       
+}
+
+// update internal list whenever there is a change
+chrome.windows.onFocusChanged.addListener(updateInformation);
+chrome.windows.onCreated.addListener(updateInformation); 
+chrome.windows.onRemoved.addListener(updateInformation);
+
+function updateInformation() {
+    updateWindowList();
+    updateCurrentWindow();
+}
+
+function updateWindowList() {
+    chrome.windows.getAll({"populate":false}, function(windows) {
+    
+        counter = 0;
+    
+        // clear array
+        windowList.length=0;
+    
+        for (var i in windows) {
+            windowList[counter]=windows[i].id;
+            counter++;
+        }
+    }
+    ); 
+}
+
+function updateCurrentWindow() {
+    // could use getLastFocused()
+    chrome.windows.getCurrent(function(window) {
+        currentWindow = window.id; 
+    }
+    );
+}
+
+
+</script>
+
+</body>
+    
